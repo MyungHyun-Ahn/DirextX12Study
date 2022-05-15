@@ -31,7 +31,7 @@ void Game::Update()
 	
 	{
 		Transform t;    // r    g    b    a
-		t.offset = Vec4(-0.5f, 0.5f, 0.f, 0.f);
+		t.offset = Vec4(0.75f, 0.f, 0.f, 0.f);
 		mesh->SetTransform(t);
 
 		mesh->Render();
@@ -39,7 +39,7 @@ void Game::Update()
 
 	{                 // x     y    z    a
 		Transform t;  // r     g    b    a
-		t.offset = Vec4(0.5f, -0.5f, 0.f, 0.f);
+		t.offset = Vec4(0.f, 0.75f, 0.f, 0.f);
 		mesh->SetTransform(t);
 
 		mesh->Render();

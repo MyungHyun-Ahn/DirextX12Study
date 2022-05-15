@@ -32,6 +32,7 @@ void ConstantBuffer::Init(uint32 size, uint32 count)
 	_elementCount = count;
 
 	CreateBuffer(); // 안에다 만들수도 있지만 나중에 기능 추가할 수도 있으므로 분할 관리
+	CreateView();
 }
 
 void ConstantBuffer::CreateBuffer()
@@ -54,6 +55,29 @@ void ConstantBuffer::CreateBuffer()
 	// the resource while it is in use by the GPU (so we must use synchronization techniques).
 }
 
+void ConstantBuffer::CreateView()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC cbvDesc = {};
+	cbvDesc.NumDescriptors = _elementCount;
+	cbvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	cbvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	DEVICE->CreateDescriptorHeap(&cbvDesc, IID_PPV_ARGS(&_cbvHeap));
+
+	_cpuHandleBegin = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
+	_handleIncrementSize = DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	// GPU 사양마다 조금씩 달라지기 때문에 항상 _handleIncrementSize를 구해와야 한다.
+
+	for (uint32 i = 0; i < _elementCount; ++i)
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE cbvHandle = GetCpuHandle(i);
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+		cbvDesc.BufferLocation = _cbvBuffer->GetGPUVirtualAddress() + static_cast<uint64>(_elementSize) * i;
+		cbvDesc.SizeInBytes = _elementSize;   // CB size is required to be 256-byte aligned.
+		// 버퍼의 주소와 사이즈를 담아서 View를 만들어주고 있음
+		DEVICE->CreateConstantBufferView(&cbvDesc, cbvHandle);
+	}
+}
 
 // _currentIndex를 0으로 밀어줌
 // 한프레임을 다그렸을 때 실행
@@ -63,17 +87,23 @@ void ConstantBuffer::Clear()
 }
 
 // rootParamIndex : b0, b1중 뭘 골라야할지 골라줌
-void ConstantBuffer::PushData(int32 rootParamIndex, void* buffer, uint32 size)
+D3D12_CPU_DESCRIPTOR_HANDLE ConstantBuffer::PushData(int32 rootParamIndex, void* buffer, uint32 size)
 {
 	assert(_currentIndex < _elementSize); // 이 조건을 만족하지 않으면 크래시 : 디버깅 코드
 
 	// 해당 인덱스 위치에 요청한 데이터를 카피
 	::memcpy(&_mappedBuffer[_currentIndex * _elementSize], buffer, size);
 
-	// 나중에 실행 되겠지만 일감을 등록
-	D3D12_GPU_VIRTUAL_ADDRESS address = GetGpuVirtualAddress(_currentIndex);
-	CMD_LIST->SetGraphicsRootConstantBufferView(rootParamIndex, address);
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCpuHandle(_currentIndex);
+
 	_currentIndex++;
+
+	return cpuHandle;
+
+	// 나중에 실행 되겠지만 일감을 등록
+	// D3D12_GPU_VIRTUAL_ADDRESS address = GetGpuVirtualAddress(_currentIndex);
+	// CMD_LIST->SetGraphicsRootConstantBufferView(rootParamIndex, address);
+	
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS ConstantBuffer::GetGpuVirtualAddress(uint32 index)
@@ -81,4 +111,19 @@ D3D12_GPU_VIRTUAL_ADDRESS ConstantBuffer::GetGpuVirtualAddress(uint32 index)
 	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = _cbvBuffer->GetGPUVirtualAddress();
 	objCBAddress += index * _elementSize;
 	return objCBAddress;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE ConstantBuffer::GetCpuHandle(uint32 index)
+{
+	// _cpuHandleBegin에다가 index * _handleIncrementSize를 더 해달라는 의미
+
+	/* 
+	// 아래 함수와 완전히 같은 기능
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = _cpuHandleBegin;
+	handle.ptr += index * _handleIncrementSize;
+	return handle;
+	*/
+	// 원하는 인덱스의 핸들을 꺼내옴
+	// 첫번째 주소에서 인덱스만큼 이동한 값의 핸들을 리턴
+	return CD3DX12_CPU_DESCRIPTOR_HANDLE(_cpuHandleBegin, index * _handleIncrementSize);
 }
