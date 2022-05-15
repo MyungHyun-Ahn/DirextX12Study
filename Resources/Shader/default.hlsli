@@ -1,6 +1,18 @@
 // 쉐이더 파일 hlsl 언어
 // 단계별로 일감을 던져줌
 
+// constant buffer 를 사용하고 register(b0) 를 사용할 것이고
+// 이것을 offset0 이라고 부를 것이라는 의미
+cbuffer TEST_B0 : register(b0)
+{
+    float4 offset0; // float4 : float가 4개 묶여있는 형태
+};
+
+cbuffer TEST_B1 : register(b1)
+{
+    float4 offset1;
+};
+
 struct VS_IN
 {
     float3 pos : POSITION;
@@ -19,7 +31,9 @@ VS_OUT VS_Main(VS_IN input)
     VS_OUT output = (VS_OUT)0;
 
     output.pos = float4(input.pos, 1.f); // 처음 3가지 값은 그대로 받고 마지막 값만 1로 채우라
+    output.pos += offset0; // 따로 넘겨준 인자로 변화가 있기를 원함
     output.color = input.color; // 받은 그대로를 반환
+    output.color += offset1;
 
     return output;
 }
