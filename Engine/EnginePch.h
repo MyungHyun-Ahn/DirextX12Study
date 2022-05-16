@@ -1,5 +1,8 @@
 #pragma once
 
+// std::byte 사용하지 않음
+#define _HAS_STD_BYTE 0
+
 // 각종 include
 #include <Windows.h>
 #include <tchar.h>
@@ -10,6 +13,9 @@
 #include <list>
 #include <map>
 using namespace std;
+
+#include <filesystem>
+namespace fs = std::filesystem;
 
 // DirectX 관련 include
 #include "d3dx12.h" // 마이크로소프트에서 제공해주는 편리한 라이브러리
@@ -24,11 +30,21 @@ using namespace DirectX;
 using namespace DirectX::PackedVector;
 using namespace Microsoft::WRL;
 
+#include <DirectXTex/DirectXTex.h>
+#include <DirectXTex/DirectXTex.inl>
+
+
 // 각종 lib
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "dxguid")
 #pragma comment(lib, "d3dcompiler")
+
+#ifdef _DEBUG
+#pragma comment(lib, "DirectXTex\\DirectXTex_debug.lib")
+#else
+#pragma comment(lib, "DirectXTex\\DirectXTex.lib")
+#endif
 
 // 각종 typedef
 // 타이핑을 줄이기 위해 재정의
@@ -45,7 +61,7 @@ using Vec3 = XMFLOAT3;
 using Vec4 = XMFLOAT4;
 using Matrix = XMMATRIX;
 
-enum class CBV_REGISTER
+enum class CBV_REGISTER : uint8
 {
 	b0,
 	b1,
@@ -56,11 +72,23 @@ enum class CBV_REGISTER
 	END // 마지막을 의미할 때 END를 선언함으로 enum class 의 요소 개수를 확인 가능
 };
 
+enum class SRV_REGISTER : uint8
+{
+	t0 = static_cast<uint8>(CBV_REGISTER::END),
+	t1,
+	t2,
+	t3,
+	t4,
+
+	END
+};
+
 enum
 {
 	SWAP_CHAIN_BUFFER_COUNT = 2,
 	CBV_REGISTER_COUNT = CBV_REGISTER::END,
-	REGISTER_COUNT = CBV_REGISTER::END,
+	SRV_REGISTER_COUNT = static_cast<uint8>(SRV_REGISTER::END) - CBV_REGISTER_COUNT,
+	REGISTER_COUNT = CBV_REGISTER_COUNT + SRV_REGISTER_COUNT,
 };
 
 struct WindowInfo
@@ -75,6 +103,7 @@ struct Vertex
 {
 	Vec3 pos;
 	Vec4 color;
+	Vec2 uv;
 };
 
 struct Transform
@@ -84,6 +113,7 @@ struct Transform
 
 #define DEVICE         GEngine->GetDevice()->GetDevice()
 #define CMD_LIST       GEngine->GetCmdQueue()->GetCmdList()
+#define RESOURCE_CMD_LIST	GEngine->GetCmdQueue()->GetResourceCmdList()
 #define ROOT_SIGNATURE GEngine->GetRootSignature()->GetSignature()
 
 // 전방 선언
