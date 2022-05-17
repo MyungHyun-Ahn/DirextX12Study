@@ -19,10 +19,15 @@ void Input::Update()
 		return;
 	}
 
+	// 아래코드 반복을 한번으로 줄이는 코드
+	BYTE asciiKeys[KEY_TYPE_COUNT] = {};
+	if (::GetKeyboardState(asciiKeys) == false)
+		return;
+
 	for (uint32 key = 0; key < KEY_TYPE_COUNT; key++)
 	{
 		// 키가 눌려 있으면 true
-		if (::GetAsyncKeyState(key) & 0x8000)
+		if (asciiKeys[key] & 0x80)
 		{
 			KEY_STATE& state = _states[key];
 

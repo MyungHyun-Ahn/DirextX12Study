@@ -2,7 +2,7 @@
 #include "RootSignature.h"
 #include "Engine.h"
 
-void RootSignature::Init(ComPtr<ID3D12Device> device)
+void RootSignature::Init()
 {
 	CreateSamplerDesc();
 	CreateRootSignature();

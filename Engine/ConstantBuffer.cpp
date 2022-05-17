@@ -22,8 +22,10 @@ ConstantBuffer::~ConstantBuffer()
 
 
 
-void ConstantBuffer::Init(uint32 size, uint32 count)
+void ConstantBuffer::Init(CBV_REGISTER reg, uint32 size, uint32 count)
 {
+	_reg = reg;
+
 	// 상수 버퍼는 256 바이트 배수로 만들어야 한다 - 원칙
 	// 0 256 (298) 512 768  // 반올림을 하기 위해 255를 더해줌
 	// 298을 넣으면 256이 아닌 512가 되고 싶음 // 256이 아닌 255를 더하는 이유 : 딱 256일때 512가 아닌 256으로 돌아오기 위함
@@ -87,23 +89,22 @@ void ConstantBuffer::Clear()
 }
 
 // rootParamIndex : b0, b1중 뭘 골라야할지 골라줌
-D3D12_CPU_DESCRIPTOR_HANDLE ConstantBuffer::PushData(int32 rootParamIndex, void* buffer, uint32 size)
+void ConstantBuffer::PushData(void* buffer, uint32 size)
 {
-	assert(_currentIndex < _elementSize); // 이 조건을 만족하지 않으면 크래시 : 디버깅 코드
+	assert(_currentIndex < _elementCount); // 이 조건을 만족하지 않으면 크래시 : 디버깅 코드
+	// 잘못 사용하는 버그를 방지
+	assert(_elementSize == ((size + 255) & ~255));
 
 	// 해당 인덱스 위치에 요청한 데이터를 카피
 	::memcpy(&_mappedBuffer[_currentIndex * _elementSize], buffer, size);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCpuHandle(_currentIndex);
 
+	GEngine->GetTableDescHeap()->SetCBV(cpuHandle, _reg);
 	_currentIndex++;
-
-	return cpuHandle;
-
 	// 나중에 실행 되겠지만 일감을 등록
 	// D3D12_GPU_VIRTUAL_ADDRESS address = GetGpuVirtualAddress(_currentIndex);
-	// CMD_LIST->SetGraphicsRootConstantBufferView(rootParamIndex, address);
-	
+	// CMD_LIST->SetGraphicsRootConstantBufferView(rootParamIndex, address);	
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS ConstantBuffer::GetGpuVirtualAddress(uint32 index)
