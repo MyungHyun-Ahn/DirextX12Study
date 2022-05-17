@@ -111,10 +111,13 @@ struct Transform
 	Vec4 offset;
 };
 
-#define DEVICE         GEngine->GetDevice()->GetDevice()
-#define CMD_LIST       GEngine->GetCmdQueue()->GetCmdList()
+#define DEVICE              GEngine->GetDevice()->GetDevice()
+#define CMD_LIST            GEngine->GetCmdQueue()->GetCmdList()
 #define RESOURCE_CMD_LIST	GEngine->GetCmdQueue()->GetResourceCmdList()
-#define ROOT_SIGNATURE GEngine->GetRootSignature()->GetSignature()
+#define ROOT_SIGNATURE      GEngine->GetRootSignature()->GetSignature()
+
+#define INPUT               GEngine->GetInput()
+#define DELTA_TIME			GEngine->GetTimer()->GetDeltaTime()
 
 // 전방 선언
 extern unique_ptr<class Engine> GEngine;
