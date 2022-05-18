@@ -4,6 +4,7 @@
 #include "CommandQueue.h"
 #include "SwapChain.h"
 #include "Material.h"
+#include "Transform.h"
 
 void Engine::Init(const WindowInfo& info)
 {
@@ -44,6 +45,11 @@ void Engine::Update()
 	_timer->Update();
 
 	ShowFps();
+}
+
+void Engine::LateUpdate()
+{
+	// TODO
 }
 
 void Engine::RenderBegin()
