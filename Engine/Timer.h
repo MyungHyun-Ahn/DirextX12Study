@@ -3,6 +3,8 @@
 // 경과된 시간과 현재 프레임을 계산하는 기능
 class Timer
 {
+	DECLARE_SINGLE(Timer);
+
 public:
 	void Init();
 	void Update();
